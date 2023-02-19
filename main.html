@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Demand Forecasting</title>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	<script>
+		function forecastDemand() {
+			var inputDate = document.getElementById("inputDate").value;
+			axios.get("/forecast?date=" + inputDate)
+			  .then(function (response) {
+			    var result = response.data;
+			    document.getElementById("result").innerHTML = "Forecasted demand for " + result.date + " is " + result.demand;
+			  })
+			  .catch(function (error) {
+			    console.log(error);
+			  });
+		}
+	</script>
+</head>
+<body>
+	<h1>Demand Forecasting</h1>
+	<p>Enter the date for which you want to forecast demand:</p>
+	<input type="date" id="inputDate">
+	<button onclick="forecastDemand()">Forecast Demand</button>
+	<p id="result"></p>
+</body>
+</html>

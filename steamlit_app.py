@@ -1,48 +1,29 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
+from statsmodels.tsa.arima.model import ARIMA
+
+app = Flask(__name__)
 
 # Load the dataset into a pandas DataFrame
-df = pd.read_csv('sales_data.csv', parse_dates=['Date'])
+demand_data = pd.read_csv('demand_data.csv', index_col='Date', parse_dates=True)
 
 # Clean and preprocess the data as needed
 
-# Define the features and target variables
-X = df[['Year', 'Month', 'Weekday']]
-y = df['Sales']
+# Choose the ARIMA model to perform demand forecasting
+model = ARIMA(demand_data, order=(1, 0, 0))
+model_fit = model.fit()
 
-# Train a linear regression model on the historical data
-model = LinearRegression()
-model.fit(X, y)
-
-# Define a Flask app
-app = Flask(__name__)
-
-# Define a route to handle incoming requests for demand forecasting
-@app.route('/forecast', methods=['POST'])
+@app.route('/forecast', methods=['GET'])
 def forecast():
-    # Parse the incoming JSON data
-    data = request.get_json()
-    year, month, weekday = data['year'], data['month'], data['weekday']
-    
-    # Make a demand forecast using the trained linear regression model
-    forecast = model.predict([[year, month, weekday]])
-    
-    # Return the forecast as a JSON response
-    return jsonify({'forecast': int(forecast[0])})
+    # Get the input date from the user
+    input_date = pd.to_datetime(request.args.get('date'))
 
-# Define a route to display a chart of the historical demand data
-@app.route('/')
-def chart():
-    fig, ax = plt.subplots()
-    ax.plot(df['Date'], df['Sales'])
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Sales')
-    fig.autofmt_xdate()
-    plt.show()
-    
+    # Use the ARIMA model to make a forecast for the input date
+    forecast = model_fit.forecast(steps=1)
+
+    # Format the forecast as a JSON object and return it to the user
+    result = {'date': input_date.strftime('%Y-%m-%d'), 'demand': forecast[0][0]}
+    return jsonify(result)
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
